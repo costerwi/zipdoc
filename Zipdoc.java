@@ -25,62 +25,85 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.PrintStream;
 import java.util.zip.CRC32;
 import java.util.zip.CheckedOutputStream;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
+/**
+ * The program takes a single argument, the name of the file to convert,
+ * and produces a more human readable, textual representation of its content on stdout.
+ * {@see https://github.com/costerwi/zipdoc}
+ */
 public class Zipdoc {
-    /**
-     * Read specified zip document file and output text to stdout.
-     *
-     * The program takes aa single argument, the name of the file to convert,
-     * and produces resulting text on stdout.
-     * {@see https://github.com/costerwi/zipdoc}
-     */
+
     public static void main(final String[] argv) throws IOException, TransformerException {
+
         if (1 != argv.length) {
             System.err.printf("Usage: %s infile > text_representation.txt\n", Zipdoc.class.getSimpleName());
             System.exit(1);
         }
 
-        try (final ZipInputStream source_zip = new ZipInputStream(new FileInputStream(argv[0]))) {
-            final Transformer serializer = SAXTransformerFactory.newInstance().newTransformer();
-            serializer.setOutputProperty(OutputKeys.INDENT, "yes");
-            serializer.setOutputProperty(OutputKeys.OMIT_XML_DECLARATION, "yes");
-            serializer.setOutputProperty("{http://xml.apache.org/xslt}indent-amount", "2");
-            final byte[] buffer = new byte[8192];
-            ZipEntry entry;
-            final ByteArrayOutputStream uncomp_bs = new ByteArrayOutputStream();
-            final CRC32 cksum = new CRC32();
-            final CheckedOutputStream uncomp_os = new CheckedOutputStream(uncomp_bs, cksum);
-            while ((entry = source_zip.getNextEntry()) != null) {
-                uncomp_bs.reset();
-                cksum.reset();
+        transform(argv[0]);
+    }
 
-                System.out.println("Sub-file:\t" + entry);
+    /**
+     * Reads the specified ZIP file and outputs a textual representation of its to stdout.
+     * @param zipFilePath the ZIP file to convert to a text
+     */
+    @SuppressWarnings("WeakerAccess")
+    public static void transform(final String zipFilePath) throws IOException, TransformerException {
 
-                // Copy file from source_zip into uncompressed, check-summed output stream
-                int len;
-                while ((len = source_zip.read(buffer)) > 0) {
-                    uncomp_os.write(buffer, 0, len);
-                }
-                source_zip.closeEntry();
+        try (final ZipInputStream zipIn = new ZipInputStream(new FileInputStream(zipFilePath))) {
+            transform(zipIn, System.out);
+        }
+    }
 
-                if (entry.getName().endsWith(".xml")) {
-                    // xml file: pretty-print the data to stdout
-                    InputSource in = new InputSource(new ByteArrayInputStream(uncomp_bs.toByteArray()));
-                    serializer.transform(new SAXSource(in), new StreamResult(System.out));
-                } else if (entry.getName().endsWith(".txt")) {
-                    // Text file: dump directly to stdout
-                    uncomp_bs.writeTo(System.out);
-                } else {
-                    // Unknown file type: report uncompressed size and CRC32
-                    System.out.println("File size:\t" + uncomp_bs.size());
-                    System.out.println("Checksum:\t" + Long.toHexString(cksum.getValue()));
-                }
-                System.out.println();
+    /**
+     * Reads the specified ZIP document and outputs a textual representation of its to the specified output stream.
+     * @param zipIn the ZIP document to convert to a text
+     * @param output where the text gets written to
+     */
+    @SuppressWarnings("WeakerAccess")
+    public static void transform(final ZipInputStream zipIn, final PrintStream output)
+            throws IOException, TransformerException
+    {
+        final Transformer serializer = SAXTransformerFactory.newInstance().newTransformer();
+        serializer.setOutputProperty(OutputKeys.INDENT, "yes");
+        serializer.setOutputProperty(OutputKeys.OMIT_XML_DECLARATION, "yes");
+        serializer.setOutputProperty("{http://xml.apache.org/xslt}indent-amount", "2");
+        final byte[] buffer = new byte[8192];
+        ZipEntry entry;
+        final ByteArrayOutputStream uncompressedOutRaw = new ByteArrayOutputStream();
+        final CRC32 checkSum = new CRC32();
+        final CheckedOutputStream uncompressedOutChecked = new CheckedOutputStream(uncompressedOutRaw, checkSum);
+        while ((entry = zipIn.getNextEntry()) != null) {
+            uncompressedOutRaw.reset();
+            checkSum.reset();
+
+            output.println("Sub-file:\t" + entry);
+
+            // Copy the file from zipIn into the uncompressed, check-summed output stream
+            int len;
+            while ((len = zipIn.read(buffer)) > 0) {
+                uncompressedOutChecked.write(buffer, 0, len);
             }
+            zipIn.closeEntry();
+
+            if (entry.getName().endsWith(".xml")) {
+                // XML file: pretty-print the data to stdout
+                InputSource in = new InputSource(new ByteArrayInputStream(uncompressedOutRaw.toByteArray()));
+                serializer.transform(new SAXSource(in), new StreamResult(output));
+            } else if (entry.getName().endsWith(".txt")) {
+                // Text file: dump directly to output
+                uncompressedOutRaw.writeTo(output);
+            } else {
+                // Unknown file type: report uncompressed size and CRC32
+                output.println("File size:\t" + uncompressedOutRaw.size());
+                output.println("Checksum:\t" + Long.toHexString(checkSum.getValue()));
+            }
+            output.println();
         }
     }
 }
