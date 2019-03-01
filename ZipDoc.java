@@ -36,12 +36,12 @@ import java.util.zip.ZipInputStream;
  * and produces a more human readable, textual representation of its content on stdout.
  * {@see https://github.com/costerwi/zipdoc}
  */
-public class Zipdoc {
+public class ZipDoc {
 
     public static void main(final String[] argv) throws IOException, TransformerException {
 
         if (1 != argv.length) {
-            System.err.printf("Usage: %s infile > text_representation.txt\n", Zipdoc.class.getSimpleName());
+            System.err.printf("Usage: %s infile > text_representation.txt\n", ZipDoc.class.getSimpleName());
             System.exit(1);
         }
 
