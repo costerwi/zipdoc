@@ -14,52 +14,54 @@
  * limitations under the License.
  */
 
-import java.io.*;
-import java.util.zip.*;
-
 import org.xml.sax.InputSource;
 import javax.xml.transform.OutputKeys;
-import javax.xml.transform.Source;
 import javax.xml.transform.Transformer;
 import javax.xml.transform.sax.SAXSource;
 import javax.xml.transform.sax.SAXTransformerFactory;
 import javax.xml.transform.stream.StreamResult;
 import javax.xml.transform.TransformerException;
- 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.util.zip.CRC32;
+import java.util.zip.CheckedOutputStream;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipInputStream;
+
 public class Zipdoc {
     /**
      * Read specified zip document file and output text to stdout.
      *
      * The program takes aa single argument, the name of the file to convert,
      * and produces resulting text on stdout.
-     * {@link https://github.com/costerwi/zipdoc}
+     * {@see https://github.com/costerwi/zipdoc}
      */
-    public static void main(String argv[]) throws IOException, TransformerException {
+    public static void main(final String[] argv) throws IOException, TransformerException {
         if (1 != argv.length) {
-            System.err.println("Usage: Zipdoc infile >textconv.txt");
+            System.err.printf("Usage: %s infile > text_representation.txt\n", Zipdoc.class.getSimpleName());
             System.exit(1);
         }
-        ZipInputStream source_zip = new ZipInputStream(new FileInputStream(argv[0]));
 
-        Transformer serializer = SAXTransformerFactory.newInstance().newTransformer();
-        serializer.setOutputProperty(OutputKeys.INDENT, "yes");
-        serializer.setOutputProperty(OutputKeys.OMIT_XML_DECLARATION, "yes");
-        serializer.setOutputProperty("{http://xml.apache.org/xslt}indent-amount", "2");
-
-        byte[] buffer = new byte[8192];
-        ZipEntry entry;
-        ByteArrayOutputStream uncomp_bs = new ByteArrayOutputStream();
-        CRC32 cksum = new CRC32();
-        CheckedOutputStream uncomp_os = new CheckedOutputStream(uncomp_bs, cksum);
-        try {
+        try (final ZipInputStream source_zip = new ZipInputStream(new FileInputStream(argv[0]))) {
+            final Transformer serializer = SAXTransformerFactory.newInstance().newTransformer();
+            serializer.setOutputProperty(OutputKeys.INDENT, "yes");
+            serializer.setOutputProperty(OutputKeys.OMIT_XML_DECLARATION, "yes");
+            serializer.setOutputProperty("{http://xml.apache.org/xslt}indent-amount", "2");
+            final byte[] buffer = new byte[8192];
+            ZipEntry entry;
+            final ByteArrayOutputStream uncomp_bs = new ByteArrayOutputStream();
+            final CRC32 cksum = new CRC32();
+            final CheckedOutputStream uncomp_os = new CheckedOutputStream(uncomp_bs, cksum);
             while ((entry = source_zip.getNextEntry()) != null) {
                 uncomp_bs.reset();
                 cksum.reset();
 
-                System.out.println("Subfile:\t" + entry);
+                System.out.println("Sub-file:\t" + entry);
 
-                // Copy file from source_zip into uncompressed, checksummed output stream
-                int len = 0;
+                // Copy file from source_zip into uncompressed, check-summed output stream
+                int len;
                 while ((len = source_zip.read(buffer)) > 0) {
                     uncomp_os.write(buffer, 0, len);
                 }
@@ -74,13 +76,12 @@ public class Zipdoc {
                     uncomp_bs.writeTo(System.out);
                 } else {
                     // Unknown file type: report uncompressed size and CRC32
-                    System.out.println("Filesize:\t" + uncomp_bs.size());
+                    System.out.println("File size:\t" + uncomp_bs.size());
                     System.out.println("Checksum:\t" + Long.toHexString(cksum.getValue()));
                 }
                 System.out.println();
             }
-        } finally {
-            source_zip.close();
         }
     }
 }
+
