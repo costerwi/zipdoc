@@ -49,6 +49,28 @@ public class ZipDoc {
     }
 
     /**
+     * Checks whether a file denotes an XML based file format.
+     * @param fileName to be checked
+     * @return whether the supplied file name is XML based
+     */
+    @SuppressWarnings("WeakerAccess")
+    public static boolean isXml(final String fileName) {
+        // TODO Improve this function with a longer list of extensions, or optimally even by inspecting the MIME-type
+        return fileName.endsWith(".xml");
+    }
+
+    /**
+     * Checks whether a file denotes an plain-text file format.
+     * @param fileName to be checked
+     * @return whether the supplied file name is text based
+     */
+    @SuppressWarnings("WeakerAccess")
+    public static boolean isPlainText(final String fileName) {
+        // TODO Improve this function with a longer list of extensions, or optimally even by inspecting the MIME-type
+        return fileName.endsWith(".txt");
+    }
+
+    /**
      * Reads the specified ZIP file and outputs a textual representation of its to stdout.
      * @param zipFilePath the ZIP file to convert to a text
      */
@@ -91,11 +113,11 @@ public class ZipDoc {
             }
             zipIn.closeEntry();
 
-            if (entry.getName().endsWith(".xml")) {
+            if (isXml(entry.getName())) {
                 // XML file: pretty-print the data to stdout
                 InputSource in = new InputSource(new ByteArrayInputStream(uncompressedOutRaw.toByteArray()));
                 serializer.transform(new SAXSource(in), new StreamResult(output));
-            } else if (entry.getName().endsWith(".txt")) {
+            } else if (isPlainText(entry.getName())) {
                 // Text file: dump directly to output
                 uncompressedOutRaw.writeTo(output);
             } else {
