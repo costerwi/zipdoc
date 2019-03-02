@@ -1,15 +1,16 @@
-# zipdoc
-Git textconv program to dump a zip file's text contents to stdout
+# ZipDoc
+A Git `textconv` program to dump a ZIP files contents as text to stdout.
 
 ## Install
-Store Zipdoc.class somewhere in your home directory, for example ~/bin.
+Store ZipDoc.class somewhere in your home directory, for example `~/bin`.
 
-Define the diff filter in ~/.gitconfig :
+Define the diff filter in `~/.gitconfig`:
 ```
-git config --global --replace-all diff.zipdoc.textconv "java -cp ~/bin Zipdoc"
+git config --global --replace-all diff.zipdoc.textconv "java -cp ~/bin ZipDoc"
 ```
 
-Assign diff attributes to paths in .gitattributes:  (also assigning the [rezip filter](https://github.com/costerwi/rezip) for efficient storage)
+Assign diff attributes to paths in `.gitattributes`
+ (also assigning the [rezip filter](https://github.com/costerwi/rezip) for efficient storage):
 ```
 # MS Office
 *.docx  filter=zip diff=zipdoc
