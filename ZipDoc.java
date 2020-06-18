@@ -12,8 +12,6 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- *
- * added xhtml files which are part of epub files (*.epub)
  */
 
 import org.xml.sax.InputSource;
@@ -58,8 +56,7 @@ public class ZipDoc {
     @SuppressWarnings("WeakerAccess")
     public static boolean isXml(final String fileName) {
         // TODO Improve this function with a longer list of extensions, or optimally even by inspecting the MIME-type
-        //return fileName.endsWith(".xml");
-		return (fileName.endsWith(".xml") ||  fileName.endsWith(".xhtml"));
+ 		return (fileName.endsWith(".xml") ||  fileName.endsWith(".xhtml"));
     }
 
     /**
