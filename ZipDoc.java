@@ -56,7 +56,7 @@ public class ZipDoc {
     @SuppressWarnings("WeakerAccess")
     public static boolean isXml(final String fileName) {
         // TODO Improve this function with a longer list of extensions, or optimally even by inspecting the MIME-type
-        return fileName.endsWith(".xml");
+ 		return (fileName.endsWith(".xml") ||  fileName.endsWith(".xhtml"));
     }
 
     /**
